@@ -499,14 +499,12 @@ class BlockchainProcessor(Processor):
                 addr = params[0]
                 _list = self.watched_addresses.get(addr)
                 if not _list:
+                    del self.watched_addresses[addr]
                     return
                 if session in _list:
                     _list.remove(session)
-                if session in _list:
                     print_log("error rc!!")
                     self.shared.stop()
-                if isinstance(_list, list):
-                    del self.watched_addresses[addr]
 
     def process(self, request, cache_only=False):
 
