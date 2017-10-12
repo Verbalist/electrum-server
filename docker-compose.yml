@@ -1,17 +1,6 @@
 version: '2'
 
 services:
-#  bitcoind:
-#    build: './containers/bitcoind/.'
-#    image: 'electrum-server'
-#    container_name: bitcoind-container
-#    ports:
-#      - '8332:8332'
-#      - '8333:8333'
-#      - '18332:18332'
-#      - '18333:18333'
-#      - '18444:18444'
-
   electrum-server:
     image: 'electrum-server'
     build: '.'

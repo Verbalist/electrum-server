@@ -30,7 +30,7 @@ import Queue
 
 from processor import Processor
 from utils import Hash, print_log
-from version import VERSION
+from . import __version__
 from utils import logger
 from ircthread import IrcThread
 
@@ -91,7 +91,7 @@ class ServerProcessor(Processor):
             result = self.get_peers()
 
         elif method == 'server.version':
-            result = VERSION
+            result = __version__
 
         else:
             raise BaseException("unknown method: %s"%repr(method))
