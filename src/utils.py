@@ -21,19 +21,21 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from itertools import imap
-import threading
-import time
 import hashlib
 import struct
+import threading
+import time
+from itertools import imap
+import os
+import logging
+import logging.handlers
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
 
-global PUBKEY_ADDRESS
-global SCRIPT_ADDRESS
 PUBKEY_ADDRESS = 0
 SCRIPT_ADDRESS = 5
+
 
 def rev_hex(s):
     return s.decode('hex')[::-1].encode('hex')
@@ -41,9 +43,7 @@ def rev_hex(s):
 
 Hash = lambda x: hashlib.sha256(hashlib.sha256(x).digest()).digest()
 
-
 hash_encode = lambda x: x[::-1].encode('hex')
-
 
 hash_decode = lambda x: x.decode('hex')[::-1]
 
@@ -51,10 +51,9 @@ hash_decode = lambda x: x.decode('hex')[::-1]
 def header_to_string(res):
     pbh = res.get('prev_block_hash')
     if pbh is None:
-        pbh = '0'*64
+        pbh = '0' * 64
 
-    return int_to_hex4(res.get('version')) \
-           + rev_hex(pbh) \
+    return int_to_hex4(res.get('version')) + rev_hex(pbh) \
            + rev_hex(res.get('merkle_root')) \
            + int_to_hex4(int(res.get('timestamp'))) \
            + int_to_hex4(int(res.get('bits'))) \
@@ -96,10 +95,7 @@ def header_from_string(s):
     }
 
 
-############ functions from pywallet #####################
-
-
-
+# functions from pywallet
 def hash_160(public_key):
     try:
         md = hashlib.new('ripemd160')
@@ -135,7 +131,7 @@ def hash_160_to_script_address(h160):
     return hash_160_to_address(h160, SCRIPT_ADDRESS)
 
 
-def hash_160_to_address(h160, addrtype = 0):
+def hash_160_to_address(h160, addrtype=0):
     """ Checks if the provided hash is actually 160bits or 20 bytes long and returns the address, else None
     """
     if h160 is None or len(h160) is not 20:
@@ -145,11 +141,12 @@ def hash_160_to_address(h160, addrtype = 0):
     addr = vh160 + h[0:4]
     return b58encode(addr)
 
+
 def bc_address_to_hash_160(addr):
     if addr is None or len(addr) is 0:
         return None
-    bytes = b58decode(addr, 25)
-    return bytes[1:21] if bytes is not None else None
+    _bytes = b58decode(addr, 25)
+    return _bytes[1:21] if _bytes is not None else None
 
 
 def b58encode(v):
@@ -157,7 +154,7 @@ def b58encode(v):
 
     long_value = 0L
     for (i, c) in enumerate(v[::-1]):
-        long_value += (256**i) * ord(c)
+        long_value += (256 ** i) * ord(c)
 
     result = ''
     while long_value >= __b58base:
@@ -175,14 +172,14 @@ def b58encode(v):
         else:
             break
 
-    return (__b58chars[0]*nPad) + result
+    return (__b58chars[0] * nPad) + result
 
 
 def b58decode(v, length):
     """ decode v into a string of len bytes."""
     long_value = 0L
     for (i, c) in enumerate(v[::-1]):
-        long_value += __b58chars.find(c) * (__b58base**i)
+        long_value += __b58chars.find(c) * (__b58base ** i)
 
     result = ''
     while long_value >= 256:
@@ -198,7 +195,7 @@ def b58decode(v, length):
         else:
             break
 
-    result = chr(0)*nPad + result
+    result = chr(0) * nPad + result
     if length is not None and len(result) != length:
         return None
 
@@ -222,31 +219,28 @@ def DecodeBase58Check(psz):
         return key
 
 
-
-
-########### end pywallet functions #######################
-import os
-
+# end pywallet functions
 def random_string(length):
     return b58encode(os.urandom(length))
+
 
 def timestr():
     return time.strftime("[%d/%m/%Y-%H:%M:%S]")
 
 
-
-### logger
-import logging
-import logging.handlers
-
-logging.basicConfig(format="%(asctime)-11s %(message)s", datefmt="[%d/%m/%Y-%H:%M:%S]")
+# logger
+logging.basicConfig(format="%(asctime)-11s %(message)s",
+                    datefmt="[%d/%m/%Y-%H:%M:%S]")
 logger = logging.getLogger('electrum')
+
 
 def init_logger():
     logger.setLevel(logging.INFO)
 
+
 def print_log(*args):
     logger.info(" ".join(imap(str, args)))
+
 
 def print_warning(message):
     logger.warning(message)
@@ -256,7 +250,7 @@ def print_warning(message):
 class ProfiledThread(threading.Thread):
     def __init__(self, filename, target):
         self.filename = filename
-        threading.Thread.__init__(self, target = target)
+        threading.Thread.__init__(self, target=target)
 
     def run(self):
         import cProfile

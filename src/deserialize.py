@@ -3,12 +3,11 @@
 #
 
 import mmap
-import string
 import struct
 import types
 
-from utils import hash_160_to_pubkey_address, hash_160_to_script_address, public_key_to_pubkey_address, hash_encode,\
-    hash_160
+from utils import hash_160_to_pubkey_address, hash_160_to_script_address, \
+    public_key_to_pubkey_address, hash_encode
 
 
 class SerializationError(Exception):
@@ -17,6 +16,7 @@ class SerializationError(Exception):
 
 class BCDataStream(object):
     """Workalike python implementation of Bitcoin's CDataStream class."""
+
     def __init__(self):
         self.input = None
         self.read_cursor = 0
@@ -25,14 +25,14 @@ class BCDataStream(object):
         self.input = None
         self.read_cursor = 0
 
-    def write(self, bytes):    # Initialize with string of bytes
+    def write(self, _bytes):  # Initialize with string of bytes
         if self.input is None:
-            self.input = bytes
+            self.input = _bytes
         else:
-            self.input += bytes
+            self.input += _bytes
 
-    def map_file(self, file, start):    # Initialize with bytes from file
-        self.input = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
+    def map_file(self, _file, start):  # Initialize with bytes from file
+        self.input = mmap.mmap(_file.fileno(), 0, access=mmap.ACCESS_READ)
         self.read_cursor = start
 
     def seek_file(self, position):
@@ -47,10 +47,12 @@ class BCDataStream(object):
         # 253 to 65,535 : byte'253' 2-byte-length followed by bytes
         # 65,536 to 4,294,967,295 : byte '254' 4-byte-length followed by bytes
         # ... and the Bitcoin client is coded to understand:
-        # greater than 4,294,967,295 : byte '255' 8-byte-length followed by bytes of string
+        # greater than 4,294,967,295 :
+        # byte '255' 8-byte-length followed by bytes of string
         # ... but I don't think it actually handles any strings that big.
         if self.input is None:
-            raise SerializationError("call write(bytes) before trying to deserialize")
+            raise SerializationError("call write(bytes) before \
+            trying to deserialize")
 
         try:
             length = self.read_compact_size()
@@ -66,13 +68,11 @@ class BCDataStream(object):
 
     def read_bytes(self, length):
         try:
-            result = self.input[self.read_cursor:self.read_cursor+length]
+            result = self.input[self.read_cursor:self.read_cursor + length]
             self.read_cursor += length
             return result
         except IndexError:
             raise SerializationError("attempt to read past end of buffer")
-
-        return ''
 
     def read_boolean(self):
         return self.read_bytes(1)[0] != chr(0)
@@ -132,23 +132,23 @@ class BCDataStream(object):
             raise SerializationError("attempt to write size < 0")
         elif size < 253:
             self.write(chr(size))
-        elif size < 2**16:
+        elif size < 2 ** 16:
             self.write('\xfd')
             self._write_num('<H', size)
-        elif size < 2**32:
+        elif size < 2 ** 32:
             self.write('\xfe')
             self._write_num('<I', size)
-        elif size < 2**64:
+        elif size < 2 ** 64:
             self.write('\xff')
             self._write_num('<Q', size)
 
-    def _read_num(self, format):
-        (i,) = struct.unpack_from(format, self.input, self.read_cursor)
-        self.read_cursor += struct.calcsize(format)
+    def _read_num(self, _format):
+        (i,) = struct.unpack_from(_format, self.input, self.read_cursor)
+        self.read_cursor += struct.calcsize(_format)
         return i
 
-    def _write_num(self, format, num):
-        s = struct.pack(format, num)
+    def _write_num(self, _format, num):
+        s = struct.pack(_format, num)
         self.write(s)
 
 
@@ -159,7 +159,8 @@ class EnumException(Exception):
 class Enumeration:
     """enum-like type
 
-    From the Python Cookbook, downloaded from http://code.activestate.com/recipes/67107/
+    From the Python Cookbook,
+    downloaded from http://code.activestate.com/recipes/67107/
     """
 
     def __init__(self, name, enumList):
@@ -198,29 +199,28 @@ class Enumeration:
 
 
 # This function comes from bitcointools, bct-LICENSE.txt.
-def long_hex(bytes):
-    return bytes.encode('hex_codec')
+def long_hex(_bytes):
+    return _bytes.encode('hex_codec')
 
 
 # This function comes from bitcointools, bct-LICENSE.txt.
-def short_hex(bytes):
-    t = bytes.encode('hex_codec')
+def short_hex(_bytes):
+    t = _bytes.encode('hex_codec')
     if len(t) < 11:
         return t
-    return t[0:4]+"..."+t[-4:]
+    return t[0:4] + "..." + t[-4:]
 
 
 def parse_TxIn(vds):
-    d = {}
+    d = dict()
     d['prevout_hash'] = hash_encode(vds.read_bytes(32))
     d['prevout_n'] = vds.read_uint32()
-    scriptSig = vds.read_bytes(vds.read_compact_size())
     d['sequence'] = vds.read_uint32()
     return d
 
 
 def parse_TxOut(vds, i):
-    d = {}
+    d = dict()
     d['value'] = vds.read_int64()
     scriptPubKey = vds.read_bytes(vds.read_compact_size())
     d['address'] = get_address_from_output_script(scriptPubKey)
@@ -230,8 +230,7 @@ def parse_TxOut(vds, i):
 
 
 def parse_Transaction(vds, is_coinbase):
-    d = {}
-    start = vds.read_cursor
+    d = dict()
     d['version'] = vds.read_int32()
     n_vin = vds.read_compact_size()
     d['inputs'] = []
@@ -250,64 +249,75 @@ def parse_Transaction(vds, is_coinbase):
 
 
 opcodes = Enumeration("Opcodes", [
-    ("OP_0", 0), ("OP_PUSHDATA1", 76), "OP_PUSHDATA2", "OP_PUSHDATA4", "OP_1NEGATE", "OP_RESERVED",
+    ("OP_0", 0), ("OP_PUSHDATA1", 76), "OP_PUSHDATA2", "OP_PUSHDATA4",
+    "OP_1NEGATE", "OP_RESERVED",
     "OP_1", "OP_2", "OP_3", "OP_4", "OP_5", "OP_6", "OP_7",
-    "OP_8", "OP_9", "OP_10", "OP_11", "OP_12", "OP_13", "OP_14", "OP_15", "OP_16",
-    "OP_NOP", "OP_VER", "OP_IF", "OP_NOTIF", "OP_VERIF", "OP_VERNOTIF", "OP_ELSE", "OP_ENDIF", "OP_VERIFY",
-    "OP_RETURN", "OP_TOALTSTACK", "OP_FROMALTSTACK", "OP_2DROP", "OP_2DUP", "OP_3DUP", "OP_2OVER", "OP_2ROT", "OP_2SWAP",
-    "OP_IFDUP", "OP_DEPTH", "OP_DROP", "OP_DUP", "OP_NIP", "OP_OVER", "OP_PICK", "OP_ROLL", "OP_ROT",
-    "OP_SWAP", "OP_TUCK", "OP_CAT", "OP_SUBSTR", "OP_LEFT", "OP_RIGHT", "OP_SIZE", "OP_INVERT", "OP_AND",
-    "OP_OR", "OP_XOR", "OP_EQUAL", "OP_EQUALVERIFY", "OP_RESERVED1", "OP_RESERVED2", "OP_1ADD", "OP_1SUB", "OP_2MUL",
-    "OP_2DIV", "OP_NEGATE", "OP_ABS", "OP_NOT", "OP_0NOTEQUAL", "OP_ADD", "OP_SUB", "OP_MUL", "OP_DIV",
+    "OP_8", "OP_9", "OP_10", "OP_11", "OP_12", "OP_13", "OP_14", "OP_15",
+    "OP_16",
+    "OP_NOP", "OP_VER", "OP_IF", "OP_NOTIF", "OP_VERIF", "OP_VERNOTIF",
+    "OP_ELSE", "OP_ENDIF", "OP_VERIFY",
+    "OP_RETURN", "OP_TOALTSTACK", "OP_FROMALTSTACK", "OP_2DROP", "OP_2DUP",
+    "OP_3DUP", "OP_2OVER", "OP_2ROT", "OP_2SWAP",
+    "OP_IFDUP", "OP_DEPTH", "OP_DROP", "OP_DUP", "OP_NIP", "OP_OVER",
+    "OP_PICK", "OP_ROLL", "OP_ROT",
+    "OP_SWAP", "OP_TUCK", "OP_CAT", "OP_SUBSTR", "OP_LEFT", "OP_RIGHT",
+    "OP_SIZE", "OP_INVERT", "OP_AND",
+    "OP_OR", "OP_XOR", "OP_EQUAL", "OP_EQUALVERIFY", "OP_RESERVED1",
+    "OP_RESERVED2", "OP_1ADD", "OP_1SUB", "OP_2MUL",
+    "OP_2DIV", "OP_NEGATE", "OP_ABS", "OP_NOT", "OP_0NOTEQUAL", "OP_ADD",
+    "OP_SUB", "OP_MUL", "OP_DIV",
     "OP_MOD", "OP_LSHIFT", "OP_RSHIFT", "OP_BOOLAND", "OP_BOOLOR",
     "OP_NUMEQUAL", "OP_NUMEQUALVERIFY", "OP_NUMNOTEQUAL", "OP_LESSTHAN",
-    "OP_GREATERTHAN", "OP_LESSTHANOREQUAL", "OP_GREATERTHANOREQUAL", "OP_MIN", "OP_MAX",
+    "OP_GREATERTHAN", "OP_LESSTHANOREQUAL", "OP_GREATERTHANOREQUAL", "OP_MIN",
+    "OP_MAX",
     "OP_WITHIN", "OP_RIPEMD160", "OP_SHA1", "OP_SHA256", "OP_HASH160",
-    "OP_HASH256", "OP_CODESEPARATOR", "OP_CHECKSIG", "OP_CHECKSIGVERIFY", "OP_CHECKMULTISIG",
+    "OP_HASH256", "OP_CODESEPARATOR", "OP_CHECKSIG", "OP_CHECKSIGVERIFY",
+    "OP_CHECKMULTISIG",
     "OP_CHECKMULTISIGVERIFY",
-    "OP_NOP1", "OP_NOP2", "OP_NOP3", "OP_NOP4", "OP_NOP5", "OP_NOP6", "OP_NOP7", "OP_NOP8", "OP_NOP9", "OP_NOP10",
+    "OP_NOP1", "OP_NOP2", "OP_NOP3", "OP_NOP4", "OP_NOP5", "OP_NOP6",
+    "OP_NOP7", "OP_NOP8", "OP_NOP9", "OP_NOP10",
     ("OP_INVALIDOPCODE", 0xFF),
 ])
 
 
-def script_GetOp(bytes):
+def script_GetOp(_bytes):
     i = 0
-    while i < len(bytes):
+    while i < len(_bytes):
         vch = None
-        opcode = ord(bytes[i])
+        opcode = ord(_bytes[i])
         i += 1
 
         if opcode <= opcodes.OP_PUSHDATA4:
             nSize = opcode
             if opcode == opcodes.OP_PUSHDATA1:
-                nSize = ord(bytes[i])
+                nSize = ord(_bytes[i])
                 i += 1
             elif opcode == opcodes.OP_PUSHDATA2:
-                (nSize,) = struct.unpack_from('<H', bytes, i)
+                (nSize,) = struct.unpack_from('<H', _bytes, i)
                 i += 2
             elif opcode == opcodes.OP_PUSHDATA4:
-                (nSize,) = struct.unpack_from('<I', bytes, i)
+                (nSize,) = struct.unpack_from('<I', _bytes, i)
                 i += 4
-            if i+nSize > len(bytes):
-              vch = "_INVALID_"+bytes[i:]
-              i = len(bytes)
+            if i + nSize > len(_bytes):
+                vch = "_INVALID_" + _bytes[i:]
+                i = len(_bytes)
             else:
-             vch = bytes[i:i+nSize]
-             i += nSize
+                vch = _bytes[i:i + nSize]
+                i += nSize
 
         yield (opcode, vch, i)
 
 
 def script_GetOpName(opcode):
-  try:
-    return (opcodes.whatis(opcode)).replace("OP_", "")
-  except KeyError:
-    return "InvalidOp_"+str(opcode)
+    try:
+        return (opcodes.whatis(opcode)).replace("OP_", "")
+    except KeyError:
+        return "InvalidOp_" + str(opcode)
 
 
-def decode_script(bytes):
+def decode_script(_bytes):
     result = ''
-    for (opcode, vch, i) in script_GetOp(bytes):
+    for (opcode, vch, i) in script_GetOp(_bytes):
         if len(result) > 0:
             result += " "
         if opcode <= opcodes.OP_PUSHDATA4:
@@ -322,22 +332,24 @@ def match_decoded(decoded, to_match):
     if len(decoded) != len(to_match):
         return False
     for i in range(len(decoded)):
-        if to_match[i] == opcodes.OP_PUSHDATA4 and decoded[i][0] <= opcodes.OP_PUSHDATA4:
-            continue    # Opcodes below OP_PUSHDATA4 all just push data onto stack, and are equivalent.
+        if to_match[i] == opcodes.OP_PUSHDATA4 \
+                and decoded[i][0] <= opcodes.OP_PUSHDATA4:
+            # Opcodes below OP_PUSHDATA4 all just push data onto stack,
+            # and are equivalent.
+            continue
         if to_match[i] != decoded[i][0]:
             return False
     return True
 
 
-
-
-def get_address_from_output_script(bytes):
+def get_address_from_output_script(_bytes):
     try:
-        decoded = [ x for x in script_GetOp(bytes) ]
-    except:
+        decoded = [x for x in list(script_GetOp(_bytes))]
+    except Exception:
         return None
 
-    # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
+    # The Genesis Block, self-payments,
+    # and pay-by-IP-address payments look like:
     # 65 BYTES:... CHECKSIG
     match = [opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG]
     if match_decoded(decoded, match):
@@ -345,23 +357,26 @@ def get_address_from_output_script(bytes):
 
     # coins sent to black hole
     # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
-    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_0, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
+    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_0,
+             opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
     if match_decoded(decoded, match):
         return None
 
     # Pay-by-Bitcoin-address TxOuts look like:
     # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
-    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
+    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4,
+             opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
     if match_decoded(decoded, match):
         return hash_160_to_pubkey_address(decoded[2][1])
 
     # strange tx
-    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG, opcodes.OP_NOP]
+    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4,
+             opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG, opcodes.OP_NOP]
     if match_decoded(decoded, match):
         return hash_160_to_pubkey_address(decoded[2][1])
 
     # p2sh
-    match = [ opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUAL ]
+    match = [opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUAL]
     if match_decoded(decoded, match):
         addr = hash_160_to_script_address(decoded[1][1])
         return addr

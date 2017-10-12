@@ -24,10 +24,9 @@ RUN apk add --no-cache --virtual=build-dependencies \
 	--repository http://nl.alpinelinux.org/alpine/edge/testing \
 	leveldb leveldb-dev
 
-RUN pip install jsonrpclib, plyvel, 'irc >= 11, <=14.0'
+RUN pip install jsonrpclib plyvel 'irc >= 11, <=14.0'
 
-RUN wget -O - "http://foundry.electrum.org/leveldb-dump/electrum-fulltree-100-latest.tar.gz" | tar --extract --gunzip --strip-components 1 --directory $path --file -
-
+#RUN wget -O - "http://foundry.electrum.org/leveldb-dump/electrum-fulltree-100-latest.tar.gz" | tar --extract --gunzip --strip-components 1 --directory $path --file -
 
 COPY . app/
 WORKDIR /app
@@ -39,8 +38,7 @@ EXPOSE 8081
 EXPOSE 50002
 EXPOSE 8082
 
-
-# NOTICE: add database path to volume tag or another
 VOLUME /app
+VOLUME /var/electrum-server
 
 CMD ["python", "run_electrum_server.py"]
