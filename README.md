@@ -2,7 +2,7 @@ Electrum-server for the Electrum client
 =========================================
 
   * Author: Thomas Voegtlin (ThomasV on the bitcointalk forum)
-  * Language: Python
+  * Language: Python2.7
 
 
 Note

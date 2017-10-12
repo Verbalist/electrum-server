@@ -1,0 +1,16 @@
+backports.functools-lru-cache==1.4
+guppy==0.1.10
+inflect==0.2.5
+irc==14.0
+jaraco.classes==1.4.1
+jaraco.collections==1.5.1
+jaraco.functools==1.16
+jaraco.itertools==2.0.1
+jaraco.logging==1.5
+jaraco.text==1.9.2
+jsonrpclib==0.1.7
+more-itertools==3.2.0
+plyvel==0.9
+pytz==2017.2
+six==1.11.0
+tempora==1.9
