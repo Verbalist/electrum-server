@@ -1,7 +1,3 @@
-# this code comes from ABE. it can probably be simplified
-#
-#
-
 import mmap
 import struct
 import types
