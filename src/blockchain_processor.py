@@ -1,27 +1,4 @@
-﻿#!/usr/bin/env python
-# Copyright(C) 2011-2016 Thomas Voegtlin
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation files
-# (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge,
-# publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-import hashlib
+﻿import hashlib
 from json import dumps, load
 import os
 from Queue import Queue
@@ -34,9 +11,17 @@ import urllib
 import deserialize
 from processor import Processor, print_log
 from storage import Storage
-from utils import logger, hash_decode, hash_encode, Hash, header_from_string, \
-    header_to_string, ProfiledThread, \
-    rev_hex, int_to_hex4
+from utils import (
+    logger,
+    hash_decode,
+    hash_encode,
+    Hash,
+    header_from_string,
+    header_to_string,
+    ProfiledThread,
+    rev_hex,
+    int_to_hex4
+)
 
 
 class BlockchainProcessor(Processor):
@@ -71,7 +56,7 @@ class BlockchainProcessor(Processor):
         self.mempool_unconfirmed = {}  # txid -> set of unconfirmed inputs
         self.mempool_hashes = set()
         self.mempool_lock = threading.Lock()
-
+        self.headers_filename = None
         self.address_queue = Queue()
 
         try:
@@ -91,6 +76,9 @@ class BlockchainProcessor(Processor):
         self.sent_header = None
 
         self.header = None
+        self.headers_offset = None
+        self.relayfee = None
+        self.bitcoind_height = None
 
         # catch_up headers
         self.init_headers(self.storage.height)
@@ -133,10 +121,13 @@ class BlockchainProcessor(Processor):
         alpha2 = alpha * delta / seconds_per_block
         tx_per_second = (1 - alpha2) * tx_per_second + alpha2 * num_tx / delta
         self.avg_time = seconds_per_block, tx_per_second, n + 1
-        if self.storage.height % 100 == 0 or (
-                            self.storage.height % 10 == 0 and
-                        self.storage.height >= 100000) \
-                or self.storage.height >= 200000:
+
+        # conditions
+        con_1 = self.storage.height % 100 == 0
+        con_2 = self.storage.height % 10 == 0 and self.storage.height >= 100000
+        con_3 = self.storage.height >= 200000
+
+        if con_1 or con_2 or con_3:
             msg = "block %d (%d %.2fs) %s" % (
                 self.storage.height, num_tx, delta,
                 self.storage.get_root_hash().encode('hex'))
@@ -355,7 +346,8 @@ class BlockchainProcessor(Processor):
         if tx_points == ['*']:
             return '*'
         status = ''.join(
-            tx.get('tx_hash') + ':%d:' % tx.get('height') for tx in tx_points)
+            tx.get('tx_hash') + ':%d:' % tx.get('height')
+            for tx in list(tx_points))
         return hashlib.sha256(status).digest().encode('hex')
 
     def get_merkle(self, tx_hash, height, cache_only):
@@ -505,16 +497,14 @@ class BlockchainProcessor(Processor):
                     self.watch_headers.remove(session)
             elif method == "blockchain.address.subscribe":
                 addr = params[0]
-                l = self.watched_addresses.get(addr)
-                if not l:
+                _list = self.watched_addresses.get(addr)
+                if not _list:
+                    del self.watched_addresses[addr]
                     return
-                if session in l:
-                    l.remove(session)
-                if session in l:
+                if session in _list:
+                    _list.remove(session)
                     print_log("error rc!!")
                     self.shared.stop()
-                if l == []:
-                    del self.watched_addresses[addr]
 
     def process(self, request, cache_only=False):
 
@@ -588,11 +578,12 @@ class BlockchainProcessor(Processor):
                     #  it's considered an error message
                     message = error["message"]
                     if "non-mandatory-script-verify-flag" in message:
-                        result = "Your client produced a transaction that is not accepted by the Bitcoin network any more. Please upgrade to Electrum 2.5.1 or newer\n"
+                        result = "Your client produced a transaction that is \
+                        not accepted by the Bitcoin network any more. \
+                        Please upgrade to Electrum 2.5.1 or newer\n"
                     else:
-                        result = "The transaction was rejected by network rules.(" + message + ")\n" \
-                                                                                               "[" + \
-                                 params[0] + "]"
+                        result = "The transaction was rejected by network \
+                        rules.(" + message + ")\n[" + params[0] + "]"
                 else:
                     result = error["message"]  # do send an error
                 print_log("error:", result)
@@ -645,7 +636,9 @@ class BlockchainProcessor(Processor):
                 rawtxdata = []
                 for ir in r:
                     assert ir[
-                               'error'] is None, "Error: make sure you run bitcoind with txindex=1; use -reindex if needed."
+                               'error'] is None, "Error: make sure you run \
+                               bitcoind with txindex=1; \
+                               use -reindex if needed."
                     rawtxdata.append(ir['result'])
             except BaseException as e:
                 logger.error(str(e))
@@ -674,22 +667,25 @@ class BlockchainProcessor(Processor):
 
             self.set_time()
 
-            revert = (random.randint(1,
-                                     100) == 1) if self.test_reorgs and self.storage.height > 100 else False
+            revert = (
+                random.randint(1, 100) == 1
+            ) if self.test_reorgs and self.storage.height > 100 else False
 
             # not done..
             self.up_to_date = False
             try:
                 next_block_hash = self.bitcoind('getblockhash',
                                                 (self.storage.height + 1,))
-            except BaseException, e:
+            except BaseException as e:
                 revert = True
 
             next_block = self.get_block(
                 next_block_hash if not revert else self.storage.last_hash)
 
-            if (next_block.get(
-                    'previousblockhash') == self.storage.last_hash) and not revert:
+            if (
+                        next_block.get('previousblockhash'
+                                       ) == self.storage.last_hash) \
+                    and not revert:
 
                 prev_root_hash = self.storage.get_root_hash()
 
@@ -721,7 +717,6 @@ class BlockchainProcessor(Processor):
                     assert prev_root_hash == self.storage.get_root_hash()
                     prev_root_hash = None
 
-            # print time
             self.print_time(n)
 
         self.header = self.block2header(
@@ -856,7 +851,8 @@ class BlockchainProcessor(Processor):
             sessions = self.watched_addresses.get(address)
 
         if sessions:
-            # TODO: update cache here. if new value equals cached value, do not send notification
+            # TODO: update cache here.
+            # if new value equals cached value, do not send notification
             self.address_queue.put((address, sessions))
 
     def close(self):

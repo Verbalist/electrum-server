@@ -1,26 +1,3 @@
-#!/usr/bin/env python
-# Copyright(C) 2011-2016 Thomas Voegtlin
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation files
-# (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge,
-# publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import hashlib
 import struct
 import threading
@@ -41,11 +18,16 @@ def rev_hex(s):
     return s.decode('hex')[::-1].encode('hex')
 
 
-Hash = lambda x: hashlib.sha256(hashlib.sha256(x).digest()).digest()
+def Hash(x):
+    return hashlib.sha256(hashlib.sha256(x).digest()).digest()
 
-hash_encode = lambda x: x[::-1].encode('hex')
 
-hash_decode = lambda x: x.decode('hex')[::-1]
+def hash_encode(x):
+    return x[::-1].encode('hex')
+
+
+def hash_decode(x):
+    return x.decode('hex')[::-1]
 
 
 def header_to_string(res):
@@ -132,7 +114,11 @@ def hash_160_to_script_address(h160):
 
 
 def hash_160_to_address(h160, addrtype=0):
-    """ Checks if the provided hash is actually 160bits or 20 bytes long and returns the address, else None
+    """
+    Checks if the provided hash is actually 160bits or 20 bytes long
+    and returns the address, else None
+    :returns: address or None
+    :rtype: str or None
     """
     if h160 is None or len(h160) is not 20:
         return None

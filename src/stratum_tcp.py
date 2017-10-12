@@ -1,26 +1,3 @@
-#!/usr/bin/env python
-# Copyright(C) 2011-2016 Thomas Voegtlin
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation files
-# (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge,
-# publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import json
 import Queue as queue
 import socket
@@ -41,7 +18,8 @@ import ssl
 
 
 class TcpSession(Session):
-    def __init__(self, dispatcher, connection, address, use_ssl, ssl_certfile, ssl_keyfile):
+    def __init__(self, dispatcher, connection, address, use_ssl, ssl_certfile,
+                 ssl_keyfile):
         Session.__init__(self, dispatcher)
         self.use_ssl = use_ssl
         self.raw_connection = connection
@@ -77,7 +55,6 @@ class TcpSession(Session):
         try:
             self._connection.shutdown(socket.SHUT_RDWR)
         except:
-            # print_log("problem shutting down", self.address)
             pass
         self._connection.close()
 
@@ -101,7 +78,8 @@ class TcpSession(Session):
 
 
 class TcpServer(threading.Thread):
-    def __init__(self, dispatcher, host, port, use_ssl, ssl_certfile, ssl_keyfile):
+    def __init__(self, dispatcher, host, port, use_ssl, ssl_certfile,
+                 ssl_keyfile):
         self.shared = dispatcher.shared
         self.dispatcher = dispatcher.request_dispatcher
         threading.Thread.__init__(self)
@@ -122,21 +100,17 @@ class TcpServer(threading.Thread):
         except:
             session.send_response({"error": "bad JSON"})
             return True
-        try:
-            # Try to load vital fields, and return an error if
-            # unsuccessful.
-            message_id = command['id']
-            method = command['method']
-        except:
-            # Return an error JSON in response.
-            session.send_response({"error": "syntax error", "request": raw_command})
+        if not command.get('id') or command.get('method'):
+            session.send_response(
+                {"error": "syntax error", "request": raw_command})
         else:
-            # print_log("new request", command)
             self.dispatcher.push_request(session, command)
 
     def run(self):
-
-        for res in socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM):
+        af = sock = None
+        sa = []
+        for res in socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
+                                      socket.SOCK_STREAM):
             af, socktype, proto, cannonname, sa = res
             try:
                 sock = socket.socket(af, socktype, proto)
@@ -153,13 +127,19 @@ class TcpServer(threading.Thread):
                 sock = None
                 continue
             break
+        if not sa:
+            return
         host = sa[0]
         if af == socket.AF_INET6:
             host = "[%s]" % host
         if sock is None:
-            print_log("could not open " + ("SSL" if self.use_ssl else "TCP") + " socket on %s:%d" % (host, self.port))
+            print_log("could not open " + (
+                "SSL" if self.use_ssl else "TCP") + " socket on %s:%d" % (
+                          host, self.port))
             return
-        print_log(("SSL" if self.use_ssl else "TCP") + " server started on %s:%d" % (host, self.port))
+        print_log(
+            ("SSL" if self.use_ssl else "TCP") + " server started on %s:%d" % (
+                host, self.port))
 
         sock_fd = sock.fileno()
         poller = select.poll()
@@ -221,7 +201,8 @@ class TcpServer(threading.Thread):
                         session.time = now
                         self.handle_command(cmd, session)
 
-                    # Anti-DOS: Stop reading if the session does not read responses 
+                    # Anti-DOS: Stop reading if the session
+                    # does not read responses
                     if session.response_queue.empty():
                         mode = READ_ONLY
                     elif session.response_queue.qsize() < 200:
@@ -244,11 +225,14 @@ class TcpServer(threading.Thread):
                     if flag & (select.POLLIN | select.POLLPRI):
                         try:
                             connection, address = sock.accept()
-                            session = TcpSession(self.dispatcher, connection, address,
-                                                 use_ssl=self.use_ssl, ssl_certfile=self.ssl_certfile,
+                            session = TcpSession(self.dispatcher, connection,
+                                                 address,
+                                                 use_ssl=self.use_ssl,
+                                                 ssl_certfile=self.ssl_certfile,
                                                  ssl_keyfile=self.ssl_keyfile)
                         except BaseException as e:
-                            logger.error("cannot start TCP session" + str(e) + ' ' + repr(address))
+                            logger.error("cannot start TCP session" + str(
+                                e) + ' ' + repr(address))
                             connection.close()
                             continue
                         connection = session._connection
@@ -263,7 +247,6 @@ class TcpServer(threading.Thread):
                 try:
                     check_do_handshake(session)
                 except BaseException as e:
-                    # logger.error('handshake failure:' + str(e) + ' ' + repr(session.address))
                     stop_session(fd)
                     continue
                 # anti DOS
@@ -322,7 +305,8 @@ class TcpServer(threading.Thread):
                     session.retry_msg = next_msg[sent:]
 
                 elif flag & select.POLLERR:
-                    print_log('handling exceptional condition for', session.address)
+                    print_log('handling exceptional condition for',
+                              session.address)
                     stop_session(fd)
 
                 elif flag & select.POLLNVAL:

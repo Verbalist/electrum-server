@@ -1,13 +1,13 @@
-# this code comes from ABE. it can probably be simplified
-#
-#
-
 import mmap
 import struct
 import types
 
-from utils import hash_160_to_pubkey_address, hash_160_to_script_address, \
-    public_key_to_pubkey_address, hash_encode
+from utils import (
+    hash_160_to_pubkey_address,
+    hash_160_to_script_address,
+    public_key_to_pubkey_address,
+    hash_encode
+)
 
 
 class SerializationError(Exception):
