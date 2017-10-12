@@ -52,7 +52,6 @@ class Processor(threading.Thread):
         self.queue.put((session, request))
 
     def push_response(self, session, response):
-        # print "response", response
         self.dispatcher.request_dispatcher.push_response(session, response)
 
     def close(self):

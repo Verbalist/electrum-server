@@ -55,7 +55,6 @@ class TcpSession(Session):
         try:
             self._connection.shutdown(socket.SHUT_RDWR)
         except:
-            # print_log("problem shutting down", self.address)
             pass
         self._connection.close()
 
@@ -101,20 +100,15 @@ class TcpServer(threading.Thread):
         except:
             session.send_response({"error": "bad JSON"})
             return True
-        try:
-            # Try to load vital fields, and return an error if
-            # unsuccessful.
-            message_id = command['id']
-            method = command['method']
-        except:
-            # Return an error JSON in response.
+        if not command.get('id') or command.get('method'):
             session.send_response(
                 {"error": "syntax error", "request": raw_command})
         else:
             self.dispatcher.push_request(session, command)
 
     def run(self):
-
+        af = sock = None
+        sa = []
         for res in socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM):
             af, socktype, proto, cannonname, sa = res
@@ -133,17 +127,19 @@ class TcpServer(threading.Thread):
                 sock = None
                 continue
             break
+        if not sa:
+            return
         host = sa[0]
         if af == socket.AF_INET6:
             host = "[%s]" % host
         if sock is None:
             print_log("could not open " + (
-            "SSL" if self.use_ssl else "TCP") + " socket on %s:%d" % (
-                      host, self.port))
+                "SSL" if self.use_ssl else "TCP") + " socket on %s:%d" % (
+                          host, self.port))
             return
         print_log(
             ("SSL" if self.use_ssl else "TCP") + " server started on %s:%d" % (
-            host, self.port))
+                host, self.port))
 
         sock_fd = sock.fileno()
         poller = select.poll()
@@ -251,8 +247,6 @@ class TcpServer(threading.Thread):
                 try:
                     check_do_handshake(session)
                 except BaseException as e:
-                    # logger.error('handshake failure:
-                    # ' + str(e) + ' ' + repr(session.address))
                     stop_session(fd)
                     continue
                 # anti DOS

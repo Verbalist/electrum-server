@@ -19,11 +19,8 @@ from utils import (
 
 """
 Patricia tree for hashing unspents
-
 """
-
 # increase this when database needs to be updated
-global GENESIS_HASH
 GENESIS_HASH = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
 DB_VERSION = 3
 KEYLENGTH = 56  # 20 + 32 + 4
@@ -111,7 +108,7 @@ class Node(object):
         return _hash, v
 
     @classmethod
-    def from_dict(klass, d):
+    def from_dict(cls, d):
         k = 0
         s = ''
         for i in xrange(256):
@@ -206,7 +203,8 @@ class Storage(object):
         # check version
         if db_version != DB_VERSION:
             print_log(
-                "Your database '%s' is deprecated. Please create a new database" % self.dbpath)
+                "Your database '%s' is deprecated. "
+                "Please create a new database" % self.dbpath)
             self.shared.stop()
             return
         # pruning limit
@@ -354,7 +352,6 @@ class Storage(object):
         path = self.get_path(target, new=True)
         if path is True:
             return
-        # print "add key: target", target.encode('hex'), "path", map(lambda x: x.encode('hex'), path)
         parent = path[-1]
         parent_node = self.get_node(parent)
         n = len(parent)
@@ -494,22 +491,19 @@ class Storage(object):
 
     def delete_key(self, leaf):
         path = self.get_path(leaf)
-        # print "delete key", leaf.encode('hex'), map(lambda x: x.encode('hex'), path)
-
         s = self.db_utxo.get(leaf)
         self.db_utxo.delete(leaf)
 
         if leaf in self.hash_list:
             del self.hash_list[leaf]
 
-        parent = path[-1]
+        parent = str(path[-1])
         letter = leaf[len(parent)]
         parent_node = self.get_node(parent)
         parent_node.remove(letter)
 
         # remove key if it has a single child
         if parent_node.is_singleton(parent):
-            # print "deleting parent", parent.encode('hex')
             self.db_utxo.delete(parent)
             if parent in self.hash_list:
                 del self.hash_list[parent]
@@ -525,7 +519,6 @@ class Storage(object):
             new_skip = otherleaf[len(gp) + 1:]
             gp_items.set(letter, None, 0)
             self.set_skip(gp + letter, new_skip)
-            # print "gp new_skip", gp.encode('hex'), new_skip.encode('hex')
             self.put_node(gp, gp_items)
 
             # note: k is not necessarily a leaf
@@ -622,9 +615,10 @@ class Storage(object):
         self.db_hist.put(addr, s)
 
     def import_transaction(self, txid, tx, block_height, touched_addr):
-
+        # contains the list of pruned items for each address in the tx;
+        # also, 'prev_addr' is a list of prev addresses
         undo = {
-            'prev_addr': []}  # contains the list of pruned items for each address in the tx; also, 'prev_addr' is a list of prev addresses
+            'prev_addr': []}
 
         prev_addr = []
         for i, x in enumerate(tx.get('inputs')):
@@ -640,7 +634,8 @@ class Storage(object):
 
         undo['prev_addr'] = prev_addr
 
-        # here I add only the outputs to history; maybe I want to add inputs too (that's in the other loop)
+        # here I add only the outputs to history;
+        # maybe I want to add inputs too (that's in the other loop)
         for x in tx.get('outputs'):
             addr = x.get('address')
             if addr is None: continue
@@ -651,7 +646,6 @@ class Storage(object):
         return undo
 
     def revert_transaction(self, txid, tx, block_height, touched_addr, undo):
-        # print_log("revert tx", txid)
         for x in reversed(tx.get('outputs')):
             addr = x.get('address')
             if addr is None: continue

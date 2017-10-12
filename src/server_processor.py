@@ -1,20 +1,12 @@
-import socket
-import sys
-import threading
-import time
 import Queue
+import threading
 
-
-from processor import Processor
-from utils import Hash, print_log
-from . import __version__
-from utils import logger
 from ircthread import IrcThread
-
+from processor import Processor
+from . import __version__
 
 
 class ServerProcessor(Processor):
-
     def __init__(self, config, shared):
         Processor.__init__(self)
         self.daemon = True
@@ -32,14 +24,12 @@ class ServerProcessor(Processor):
         else:
             self.irc = None
 
-
     def read_irc_results(self):
         while True:
             try:
                 event, params = self.irc_queue.get(timeout=1)
             except Queue.Empty:
                 continue
-            #logger.info(event + ' ' + repr(params))
             if event == 'join':
                 nick, ip, host, ports = params
                 self.peers[nick] = (ip, host, ports)
@@ -48,15 +38,11 @@ class ServerProcessor(Processor):
                 if nick in self.peers:
                     del self.peers[nick]
 
-
     def get_peers(self):
         return self.peers.values()
 
-
     def process(self, request):
         method = request['method']
-        params = request['params']
-        result = None
 
         if method == 'server.banner':
             result = self.config.get('server', 'banner').replace('\\n', '\n')
@@ -71,6 +57,6 @@ class ServerProcessor(Processor):
             result = __version__
 
         else:
-            raise BaseException("unknown method: %s"%repr(method))
+            raise BaseException("unknown method: %s" % repr(method))
 
         return result

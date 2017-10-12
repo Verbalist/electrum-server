@@ -719,7 +719,6 @@ class BlockchainProcessor(Processor):
                     assert prev_root_hash == self.storage.get_root_hash()
                     prev_root_hash = None
 
-            # print time
             self.print_time(n)
 
         self.header = self.block2header(
