@@ -7,6 +7,7 @@ import sys
 import time
 import threading
 import urllib
+from ConfigParser import NoOptionError
 
 import deserialize
 from processor import Processor, print_log
@@ -62,7 +63,7 @@ class BlockchainProcessor(Processor):
         try:
             # simulate random blockchain reorgs
             self.test_reorgs = config.getboolean('leveldb', 'test_reorgs')
-        except ValueError:
+        except:
             self.test_reorgs = False
         self.storage = Storage(config, shared, self.test_reorgs)
 
@@ -158,6 +159,7 @@ class BlockchainProcessor(Processor):
         postdata = dumps({"method": method, 'params': params, 'id': 'jsonrpc'})
         while True:
             try:
+                print_log(postdata)
                 response = urllib.urlopen(self.bitcoind_url, postdata)
                 r = load(response)
                 response.close()
@@ -635,10 +637,9 @@ class BlockchainProcessor(Processor):
             try:
                 rawtxdata = []
                 for ir in r:
-                    assert ir[
-                               'error'] is None, "Error: make sure you run \
-                               bitcoind with txindex=1; \
-                               use -reindex if needed."
+                    print_log("response: {}".format(ir))
+                    if ir['error'] is not None:
+                        raise BaseException(ir['error'])
                     rawtxdata.append(ir['result'])
             except BaseException as e:
                 logger.error(str(e))

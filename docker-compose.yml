@@ -1,14 +1,24 @@
 version: '2'
 
 services:
+  sibcoind:
+    image: docker-sibcoind
+    build: containers/sibcoin/.
+    volumes:
+      - "./data-sibcoind:/data/sibcoin"
+    network_mode: "service:electrum-server"
+    depends_on:
+      - electrum-server
+    command:
+      - "-reindex"
+      - "-rest"
+
   electrum-server:
-    image: 'electrum-server'
-    build: '.'
+    image: electrum-server
+    build: containers/electrum-server/.
     container_name: electrum-container
     ports:
       - '50001:50001'
-      - '8081:8081'
-      - '50002:50002'
-      - '8082:8082'
     volumes:
       - './electrum_data:/var/electrum-server'
+      - '.:/app'

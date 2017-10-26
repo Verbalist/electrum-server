@@ -18,7 +18,8 @@ RUN apk add --no-cache --update python py-pip \
 		gmp-dev \
 		python-dev \
 		openssl-dev \
-		git
+		git \
+		curl
 
 RUN apk add --no-cache --virtual=build-dependencies \
 	--repository http://nl.alpinelinux.org/alpine/edge/testing \
@@ -26,19 +27,18 @@ RUN apk add --no-cache --virtual=build-dependencies \
 
 RUN pip install jsonrpclib plyvel 'irc >= 11, <=14.0'
 
-#RUN wget -O - "http://foundry.electrum.org/leveldb-dump/electrum-fulltree-100-latest.tar.gz" | tar --extract --gunzip --strip-components 1 --directory $path --file -
-
-COPY . app/
-WORKDIR /app
-RUN chmod +x run_electrum_server.py
-USER unprivileged
+VOLUME /app
+RUN mkdir /var/electrum-server
+VOLUME /var/electrum-server
 
 EXPOSE 50001
 EXPOSE 8081
 EXPOSE 50002
 EXPOSE 8082
 
-VOLUME /app
-VOLUME /var/electrum-server
+COPY electrum.conf /etc/
+COPY entrypoint.sh /
+RUN chmod +x entrypoint.sh
+USER unprivileged
 
-CMD ["python", "run_electrum_server.py"]
+CMD ["./entrypoint.sh"]
