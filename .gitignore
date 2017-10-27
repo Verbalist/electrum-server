@@ -2,10 +2,6 @@
 *.so
 *.o
 .gitignore
-electrum.conf
 .idea/
-electrum_data/addr/*
-electrum_data/hist/*
-electrum_data/undo/*
-electrum_data/utxo/*
-electrum_data/blockchain_headers
+electrum_data/
+data-sibcoind/
