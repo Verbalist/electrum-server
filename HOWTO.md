@@ -278,11 +278,11 @@ in case you need to restore them.
 
 ### Step 9. Configure Electrum server
 
-Electrum reads a config file (/etc/electrum.conf) when starting up. This
+Electrum reads a config file (/etc/electrum_sib.conf) when starting up. This
 file includes the database setup, bitcoind RPC setup, and a few other
 options.
 
-The "configure" script listed above will create a config file at /etc/electrum.conf
+The "configure" script listed above will create a config file at /etc/electrum_sib.conf
 which you can edit to modify the settings.
 
 Go through the config options and set them to your liking.

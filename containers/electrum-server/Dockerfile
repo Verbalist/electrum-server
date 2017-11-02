@@ -36,7 +36,7 @@ EXPOSE 8081
 EXPOSE 50002
 EXPOSE 8082
 
-COPY electrum.conf /etc/
+COPY electrum_sib.conf /etc/
 COPY entrypoint.sh /
 RUN chmod +x entrypoint.sh
 USER unprivileged

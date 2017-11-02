@@ -6,5 +6,5 @@
 electrum_data/
 data-sibcoind/
 
-electrum.conf
+electrum_sib.conf
 .idea/
