@@ -32,7 +32,6 @@ import json
 import os
 import imp
 
-
 if os.path.dirname(os.path.realpath(__file__)) == os.getcwd():
     imp.load_module('electrumserver', *imp.find_module('src'))
 
@@ -42,16 +41,17 @@ from electrumserver.server_processor import ServerProcessor
 from electrumserver.blockchain_processor import BlockchainProcessor
 from electrumserver.stratum_tcp import TcpServer
 
-
 logging.basicConfig()
 
-if sys.maxsize <= 2**32:
-    print "Warning: it looks like you are using a 32bit system. You may experience crashes caused by mmap"
+if sys.maxsize <= 2 ** 32:
+    print "Warning: it looks like you are using a 32bit system. \
+    You may experience crashes caused by mmap"
 
 if os.getuid() == 0:
     print "Do not run this program as root!"
     print "Run the install script to create a non-privileged user."
     sys.exit()
+
 
 def attempt_read_config(config, filename):
     try:
@@ -60,12 +60,14 @@ def attempt_read_config(config, filename):
     except IOError:
         pass
 
+
 def load_banner(config):
     try:
         with open(config.get('server', 'banner_file'), 'r') as f:
             config.set('server', 'banner', f.read())
     except IOError:
         pass
+
 
 def setup_network_params(config):
     type = config.get('network', 'type')
@@ -80,6 +82,7 @@ def setup_network_params(config):
         utils.SCRIPT_ADDRESS = config.getint('network', 'script_address')
     if config.has_option('network', 'genesis_hash'):
         storage.GENESIS_HASH = config.get('network', 'genesis_hash')
+
 
 def create_config(filename=None):
     config = ConfigParser.ConfigParser()
@@ -106,9 +109,9 @@ def create_config(filename=None):
     config.set('leveldb', 'path', '/dev/shm/electrum_db')
     config.set('leveldb', 'pruning_limit', '100')
     config.set('leveldb', 'reorg_limit', '100')
-    config.set('leveldb', 'utxo_cache', str(64*1024*1024))
-    config.set('leveldb', 'hist_cache', str(128*1024*1024))
-    config.set('leveldb', 'addr_cache', str(16*1024*1024))
+    config.set('leveldb', 'utxo_cache', str(64 * 1024 * 1024))
+    config.set('leveldb', 'hist_cache', str(128 * 1024 * 1024))
+    config.set('leveldb', 'addr_cache', str(16 * 1024 * 1024))
     config.set('leveldb', 'profiler', 'no')
 
     # set network parameters
@@ -159,6 +162,7 @@ def cmd_banner_update():
     load_banner(dispatcher.shared.config)
     return True
 
+
 def cmd_getinfo():
     return {
         'blocks': chain_proc.storage.height,
@@ -166,7 +170,8 @@ def cmd_getinfo():
         'sessions': len(dispatcher.request_dispatcher.get_sessions()),
         'watched': len(chain_proc.watched_addresses),
         'cached': len(chain_proc.history_cache),
-        }
+    }
+
 
 def cmd_sessions():
     return map(lambda s: {"time": s.time,
@@ -176,21 +181,27 @@ def cmd_sessions():
                           "subscriptions": len(s.subscriptions)},
                dispatcher.request_dispatcher.get_sessions())
 
+
 def cmd_numsessions():
     return len(dispatcher.request_dispatcher.get_sessions())
 
+
 def cmd_peers():
     return server_proc.peers.keys()
+
 
 def cmd_numpeers():
     return len(server_proc.peers)
 
 
 hp = None
+
+
 def cmd_guppy():
     from guppy import hpy
     global hp
     hp = hpy()
+
 
 def cmd_debug(s):
     import traceback
@@ -220,6 +231,7 @@ transports = []
 tcp_server = None
 ssl_server = None
 
+
 def start_server(config):
     global shared, chain_proc, server_proc, dispatcher
     global tcp_server, ssl_server
@@ -244,9 +256,11 @@ def start_server(config):
 
     # handle termination signals
     import signal
-    def handler(signum = None, frame = None):
+
+    def handler(signum=None, frame=None):
         print_log('Signal handler called with signal', signum)
         shared.stop()
+
     for sig in [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT]:
         signal.signal(sig, handler)
 
@@ -259,11 +273,13 @@ def start_server(config):
 
     # Create various transports we need
     if stratum_tcp_port:
-        tcp_server = TcpServer(dispatcher, host, stratum_tcp_port, False, None, None)
+        tcp_server = TcpServer(dispatcher, host, stratum_tcp_port, False, None,
+                               None)
         transports.append(tcp_server)
 
     if stratum_tcp_ssl_port:
-        ssl_server = TcpServer(dispatcher, host, stratum_tcp_ssl_port, True, ssl_certfile, ssl_keyfile)
+        ssl_server = TcpServer(dispatcher, host, stratum_tcp_ssl_port, True,
+                               ssl_certfile, ssl_keyfile)
         transports.append(ssl_server)
 
     for server in transports:
@@ -279,12 +295,14 @@ def stop_server():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--conf', metavar='path', default=None, help='specify a configuration file')
-    parser.add_argument('command', nargs='*', default=[], help='send a command to the server')
+    parser.add_argument('--conf', metavar='path', default=None,
+                        help='specify a configuration file')
+    parser.add_argument('command', nargs='*', default=[],
+                        help='send a command to the server')
     args = parser.parse_args()
-    config = create_config(args.conf)
+    _config = create_config(args.conf)
 
-    electrum_rpc_port = get_port(config, 'electrum_rpc_port')
+    electrum_rpc_port = get_port(_config, 'electrum_rpc_port')
 
     if len(args.command) >= 1:
         try:
@@ -304,10 +322,12 @@ if __name__ == '__main__':
         print "server already running"
         sys.exit(1)
 
-    start_server(config)
+    start_server(_config)
 
     from SimpleXMLRPCServer import SimpleXMLRPCServer
-    server = SimpleXMLRPCServer(('localhost', electrum_rpc_port), allow_none=True, logRequests=False)
+
+    server = SimpleXMLRPCServer(('localhost', electrum_rpc_port),
+                                allow_none=True, logRequests=False)
     server.register_function(lambda: os.getpid(), 'getpid')
     server.register_function(shared.stop, 'stop')
     server.register_function(cmd_getinfo, 'getinfo')
@@ -319,7 +339,7 @@ if __name__ == '__main__':
     server.register_function(cmd_guppy, 'guppy')
     server.register_function(cmd_banner_update, 'banner_update')
     server.socket.settimeout(1)
- 
+
     while not shared.stopped():
         try:
             server.handle_request()

@@ -2,5 +2,9 @@
 *.so
 *.o
 .gitignore
+.idea/
+electrum_data/
+data-sibcoind/
+
 electrum.conf
 .idea/

@@ -3,11 +3,11 @@ from setuptools import setup
 setup(
     name="electrum-server",
     version="1.0",
-    scripts=['run_electrum_server.py','electrum-server'],
-    install_requires=['plyvel','jsonrpclib', 'irc >= 11, <=14.0'],
+    scripts=['run_electrum_server.py', 'electrum-server'],
+    install_requires=['plyvel', 'jsonrpclib', 'irc >= 11, <=14.0', 'guppy'],
     package_dir={
-        'electrumserver':'src'
-        },
+        'electrumserver': 'src'
+    },
     py_modules=[
         'electrumserver.__init__',
         'electrumserver.utils',
