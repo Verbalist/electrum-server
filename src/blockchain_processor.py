@@ -650,7 +650,6 @@ class BlockchainProcessor(Processor):
             return block
 
     def catch_up(self, sync=True):
-
         self.start_catchup_height = self.storage.height
         prev_root_hash = None
         n = 0
@@ -845,7 +844,6 @@ class BlockchainProcessor(Processor):
     def invalidate_cache(self, address):
         with self.cache_lock:
             if address in self.history_cache:
-                # print_log("cache: invalidating", address)
                 del self.history_cache[address]
 
         with self.watch_lock:
