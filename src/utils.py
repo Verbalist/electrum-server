@@ -10,8 +10,8 @@ import logging.handlers
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
 
-PUBKEY_ADDRESS = 0
-SCRIPT_ADDRESS = 5
+PUBKEY_ADDRESS = 63
+SCRIPT_ADDRESS = 40
 
 
 def rev_hex(s):
@@ -113,7 +113,7 @@ def hash_160_to_script_address(h160):
     return hash_160_to_address(h160, SCRIPT_ADDRESS)
 
 
-def hash_160_to_address(h160, addrtype=0):
+def hash_160_to_address(h160, addrtype=63):
     """
     Checks if the provided hash is actually 160bits or 20 bytes long
     and returns the address, else None
