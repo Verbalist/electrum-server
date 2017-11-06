@@ -1,0 +1,20 @@
+[server]
+username = sibcoin # пользователь из под которого будет запущен electrum-server
+host = localhost # хост електрум сервера
+# ports
+electrum_rpc_port = 8000
+stratum_tcp_port = 50001
+banner = Welcome to Electrum!
+banner_file = /etc/electrum.banner
+logfile = /var/log/electrum.log # в случае если нет прав то создать файл и выполнить chmod a+x /var/log/electrum.log
+
+[leveldb]
+path = /путь-к-папке # путь куда сервер будет складывать свою базу, в случае если давать права то chown -R $USER:$USER /путь-к-папке
+pruning_limit = 100
+test_reorgs = True
+
+[bitcoind]
+bitcoind_host = localhost # хост ноды
+bitcoind_port = 1944 # rpc порт ноды
+bitcoind_user = sibcoin # rpc user ноды в sibcoin.conf -> rpcuser=sibcoin (пример)
+bitcoind_password = local123 # rpc password ноды в sibcoin.conf -> rpcpassword=local123 (пример)
